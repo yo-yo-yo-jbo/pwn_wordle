@@ -78,13 +78,20 @@ read_dictionary(void)
         goto cleanup;
     }
 
-    // Allocate dictionary
+    // Conclude dictionary size
     file_size = ftell(fp);
     if ((0 > file_size) || (MAX_DICTIONARY_SIZE < file_size))
     {
         write_error("Dictionary size is too big.");
         goto cleanup;
     }
+    if (0 != (file_size % WORD_LENGTH))
+    {
+        write_error("Dictionary is corrupted.");
+        goto cleanup;
+    }
+
+    // Allocate dictionary
     dictionary = calloc(file_size + 1, sizeof(*dictionary));
     if (NULL == dictionary)
     {
