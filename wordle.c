@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define WORD_LENGTH (6)
 #define MAX_WORDS (10000)
 #define MAX_DICTIONARY_SIZE (WORD_LENGTH * MAX_WORDS)
+#define ATTEMPTS_NUM (5)
 
 /************************************************************************
 *                                                                       *
@@ -22,6 +24,69 @@ write_error(
 {
     // Write in color
     (void)printf("\x1b[31m\x1b[1mERROR:\x1b[0m %s\n", msg);
+}
+
+/************************************************************************
+*                                                                       *
+*  Function:   print_logo                                               *
+*  Purpose:    Clears the screen and prints out the logo.               *
+*                                                                       *
+*************************************************************************/
+static
+void
+print_logo(void)
+{
+    (void)printf("\e[1;1H\e[2J");
+    (void)printf("\n\x1b[37m\x1b[1m  ██     ██   \x1b[31m\x1b[1m,d88b.d88b,\x1b[37m\x1b[1m  ██████  ██████  ██      ███████\n  ██     ██   \x1b[31m\x1b[1m88888888888\x1b[37m\x1b[1m  ██   ██ ██   ██ ██      ██     \n  ██  █  ██   \x1b[31m\x1b[1m`Y8888888Y\'\x1b[37m\x1b[1m  ██████  ██   ██ ██      █████  \n  ██ ███ ██     \x1b[31m\x1b[1m`Y888Y\'\x1b[37m\x1b[1m    ██   ██ ██   ██ ██      ██     \n   ███ ███        \x1b[31m\x1b[1m`Y\'\x1b[37m\x1b[1m      ██   ██ ██████  ███████ ███████\n\n             Level by Jonathan Bar Or (\"JBO\")\n                     @yo_yo_yo_jbo\n\x1b[0m-----------------------------------------------------------\n");
+}
+
+/************************************************************************
+*                                                                       *
+*  Function:   play                                                     *
+*  Purpose:    Plays until the player quits.                            *
+*  Parameters: - dictionary - the dictionary.                           *
+*              - num_words - the number of words.                       *
+*                                                                       *
+*************************************************************************/
+static
+void
+play(
+    char* dictionary,
+    size_t num_words
+)
+{
+    char curr_word[WORD_LENGTH + 1] = { 0 };
+    char curr_attempt[WORD_LENGTH + 1] = { 0 };
+    int attempts = 0;
+    bool won = false;
+
+    // Play forever
+    for (;;)
+    {
+        // Choose a new word randomly
+        (void)strncpy(curr_word, dictionary + ((rand() % num_words) * WORD_LENGTH), sizeof(curr_word));
+
+        // Play all rounds
+        while (ATTEMPTS_NUM > attempts)
+        {
+            // Print game so far
+            print_logo();
+
+            // Get user input
+            (void)printf("Enter your current attempt: ");
+            (void)memset(curr_attempt, '\0', sizeof(curr_attempt));
+            if (NULL == fgets(curr_attempt, sizeof(curr_attempt), stdin))
+            {
+                write_error("Failed reading user input.");
+                goto cleanup;
+            }
+        }
+    }
+
+cleanup:
+
+    // Return
+    return;
 }
 
 /************************************************************************
@@ -79,18 +144,19 @@ read_dictionary(void)
     }
 
     // Conclude dictionary size
-    file_size = ftell(fp);
-    if ((0 > file_size) || (MAX_DICTIONARY_SIZE < file_size))
+    if (-1 == fseek(fp, 0, SEEK_END))
     {
-        write_error("Dictionary size is too big.");
+        write_error("Error reading dictionary file size.");
         goto cleanup;
     }
-    if (0 != (file_size % WORD_LENGTH))
+    file_size = ftell(fp);
+    if ((0 >= file_size) || (MAX_DICTIONARY_SIZE < file_size) || (0 != (file_size % WORD_LENGTH)))
     {
         write_error("Dictionary is corrupted.");
         goto cleanup;
     }
-
+    rewind(fp);
+    
     // Allocate dictionary
     dictionary = calloc(file_size + 1, sizeof(*dictionary));
     if (NULL == dictionary)
@@ -133,12 +199,18 @@ main()
 {
     char* dictionary = NULL;
 
+    // Print the logo
+    print_logo();
+
     // Read the dictionary
     dictionary = read_dictionary();
     if (NULL == dictionary)
     {
         goto cleanup;
     }
+
+    // Play the game
+    play(dictionary, strlen(dictionary) / WORD_LENGTH);
 
 cleanup:
 
