@@ -89,7 +89,7 @@ write_error(
 )
 {
     // Write in color
-    (void)printf("\x1b[31m\x1b[1mERROR:\x1b[0m %s\n", msg);
+    (void)printf("%sERROR:%s %s\n", RED, RESET_COLOR, msg);
 }
 
 /************************************************************************
@@ -147,7 +147,7 @@ check_attempt(
         }
     }
 
-    // Finds misplaced letters
+    // Find misplaced letters
     for (counter = 0; counter < WORD_LENGTH; counter++)
     {
         if ((NULL == colors[counter]) && (0 < frequencies[toupper(attempt[counter])]))
