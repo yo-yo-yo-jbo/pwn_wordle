@@ -548,8 +548,8 @@ main()
 {
     char* dictionary = NULL;
 
-    // No buffering
-    setvbuf(stdin, NULL, _IONBF, 0);
+    // Set buffering
+    setvbuf(stdin, NULL, _IOFBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
     // Print the logo

@@ -8,5 +8,5 @@ strip ./wordle
 checksec ./wordle
 chown root:root ./wordle
 chmod 4755 ./wordle
-echo FIND_THE_DIVINITY_WITHIN_AND_EMEGE > ./flag.txt
+echo FIND_THE_DIVINITY_WITHIN_AND_EMERGE > ./flag.txt
 chmod 600 ./flag.txt
