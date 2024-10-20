@@ -245,6 +245,10 @@ print_game_header(
     {
         (void)printf("%sERROR: %s%s\n\n", RED, RESET_COLOR, last_error_message);
     }
+    else
+    {
+        (void)printf("\n\n");
+    }
 
     // Print all attempts
     for (counter = 0; counter < ATTEMPTS_NUM; counter++)
@@ -302,7 +306,6 @@ play_one_round(
     {
         // Print game so far
         print_game_header(last_error_message, attempts, curr_word, past_attempts);
-        last_error_message = NULL;
 
         // Get user input
         (void)printf("Enter your current attempt: ");
@@ -331,6 +334,7 @@ play_one_round(
         }
         
         // Validate input
+        last_error_message = NULL;
         if (WORD_LENGTH != strlen(curr_attempt))
         {
             last_error_message = "Word length is incorrect.";
