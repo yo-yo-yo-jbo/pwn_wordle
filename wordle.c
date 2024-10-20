@@ -347,7 +347,7 @@ play_one_round(
         }
 
         // Save the attempt as a past attempt
-        (void)strncpy(past_attempts[attempts], curr_attempt, sizeof(curr_attempt));
+        (void)strncpy(past_attempts[attempts], curr_attempt, WORD_LENGTH + 1);
         attempts++;
 
         // Check the attempt
@@ -393,8 +393,6 @@ play(
     size_t num_words
 )
 {
-    unsigned long rounds = 0;
-    unsigned long wins = 0;
     int choice = 0;
     bool quit = false; 
  
