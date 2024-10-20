@@ -69,6 +69,14 @@
 
 /************************************************************************
 *                                                                       *
+*  Constant:   GRAY                                                     *
+*  Purpose:    Defines the color gray.                                  *
+*                                                                       *
+*************************************************************************/
+#define GRAY ("\x1b[37m\x1b[2m\x1b[1m")
+
+/************************************************************************
+*                                                                       *
 *  Constant:   RESET_COLOR                                              *
 *  Purpose:    Defines the string that resets the color.                *
 *                                                                       *
@@ -226,6 +234,7 @@ is_dictionary_word(
 *              - attempts - the number of attempts so far.              *
 *              - curr_word - the current target word.                   *
 *              - past_attempts - the past attempts.                     *
+*              - number_of_dict_words - number of dictionary words.     *
 *                                                                       *
 *************************************************************************/
 static
@@ -234,13 +243,15 @@ print_game_header(
     char* last_error_message,
     unsigned long attempts,
     char* curr_word,
-    char past_attempts[ATTEMPTS_NUM][WORD_LENGTH + 1] 
+    char past_attempts[ATTEMPTS_NUM][WORD_LENGTH + 1],
+    unsigned long number_of_dict_words
 )
 {
     size_t counter = 0;
 
     // Print logo and last error message
     print_logo();
+    (void)printf("%sDictionary contains %lu words.%s\n", GRAY, number_of_dict_words, RESET_COLOR);
     if (NULL != last_error_message)
     {
         (void)printf("%sERROR: %s%s\n\n", RED, RESET_COLOR, last_error_message);
@@ -297,7 +308,11 @@ play_one_round(
     bool won = false;
     char* last_error_message = NULL;
     char* newline = NULL;
-    
+    unsigned long number_of_dict_words = 0;    
+
+    // Conclude number of dictionary words
+    number_of_dict_words = strlen(dictionary) / WORD_LENGTH;
+
     // Choose a new word randomly
     (void)strncpy(curr_word, dictionary + ((rand() % num_words) * WORD_LENGTH), sizeof(curr_word) - 1);
 
@@ -305,7 +320,7 @@ play_one_round(
     while (ATTEMPTS_NUM > attempts)
     {
         // Print game so far
-        print_game_header(last_error_message, attempts, curr_word, past_attempts);
+        print_game_header(last_error_message, attempts, curr_word, past_attempts, number_of_dict_words);
 
         // Get user input
         (void)printf("Enter your current attempt: ");
@@ -359,7 +374,7 @@ play_one_round(
     }
 
     // Print solution
-    print_game_header(last_error_message, attempts, curr_word, past_attempts);
+    print_game_header(last_error_message, attempts, curr_word, past_attempts, number_of_dict_words);
     if (won)
     {
         printf("\nGreat job on guessing the word %s%s%s!\n", GREEN, curr_word, RESET_COLOR);
