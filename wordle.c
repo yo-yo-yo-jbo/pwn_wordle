@@ -114,6 +114,7 @@ print_logo(void)
 *              - word - the correct word, assumed to be a valid word.   *
 *              - print - whether to print or not.                       *
 *  Returns:    True if the word and the attempt match, false otherwise. *
+*  Remarks:    - Case insensitive.                                      *
 *                                                                       *
 *************************************************************************/
 static
@@ -172,6 +173,104 @@ check_attempt(
 
 /************************************************************************
 *                                                                       *
+*  Function:   is_dictionary_word                                       *
+*  Purpose:    Checks if the given word exists in the dictionary.       *
+*  Parameters: - word - the given word.                                 *
+*              - dictionary - the dictionary.                           *
+*  Returns:    True if and only if word is found in the dictionary.     *
+*  Remarks:    - Case insensitive.                                      *
+*                                                                       *
+*************************************************************************/
+static
+bool
+is_dictionary_word(
+    char* word,
+    char* dictionary
+)
+{
+    char* ptr = NULL;
+    char* end = NULL;
+    size_t counter = 0;
+    bool failed = false;
+
+    // Iterate all dictionary words
+    end = dictionary + strlen(dictionary);
+    for (ptr = dictionary; ptr < end; ptr += WORD_LENGTH)
+    {
+        failed = false;
+        for (counter = 0; counter < WORD_LENGTH; counter++)
+        {
+            if (toupper(word[counter]) != toupper(ptr[counter]))
+            {
+                failed = true;
+                break;
+            }
+        }
+
+        // Quit if found
+        if (!failed)
+        {
+            break;
+        }
+    }
+
+    // Indicate result
+    return !failed;
+}
+
+/************************************************************************
+*                                                                       *
+*  Function:   print_game_header                                        *
+*  Purpose:    Prints out the game's header.                            *
+*  Parameters: - last_error_message - an optional error message.        *
+*              - attempts - the number of attempts so far.              *
+*              - curr_word - the current target word.                   *
+*              - past_attempts - the past attempts.                     *
+*                                                                       *
+*************************************************************************/
+static
+void
+print_game_header(
+    char* last_error_message,
+    unsigned long attempts,
+    char* curr_word,
+    char past_attempts[ATTEMPTS_NUM][WORD_LENGTH + 1] 
+)
+{
+    size_t counter = 0;
+
+    // Print logo and last error message
+    print_logo();
+    if (NULL != last_error_message)
+    {
+        (void)printf("%sERROR: %s%s\n\n", RED, RESET_COLOR, last_error_message);
+    }
+
+    // Print all attempts
+    for (counter = 0; counter < ATTEMPTS_NUM; counter++)
+    {
+        printf("%s%lu.%s ", RED, counter + 1, RESET_COLOR);
+        if (counter < attempts)
+        {
+            if (check_attempt(past_attempts[counter], curr_word, true))
+            {
+                goto cleanup;
+            }
+        }
+        else
+        {
+            (void)printf("%s\n", counter == attempts ? "<<< CURRENT ATTEMPT >>>" : "");
+        }
+    }
+
+cleanup:
+
+    // Return
+    return;
+}
+
+/************************************************************************
+*                                                                       *
 *  Function:   play_one_round                                           *
 *  Purpose:    Plays one round.                                         *
 *  Parameters: - dictionary - the dictionary.                           *
@@ -191,7 +290,6 @@ play_one_round(
     char curr_attempt[WORD_LENGTH + 2] = { 0 };
     char past_attempts[ATTEMPTS_NUM][WORD_LENGTH + 1] = { 0 };
     unsigned long attempts = 0;
-    unsigned long counter = 0;
     bool won = false;
     char* last_error_message = NULL;
     char* newline = NULL;
@@ -203,16 +301,8 @@ play_one_round(
     while (ATTEMPTS_NUM > attempts)
     {
         // Print game so far
-        print_logo();
-        if (NULL != last_error_message)
-        {
-            (void)printf("%sERROR: %s%s\n\n", RED, RESET_COLOR, last_error_message);
-            last_error_message = NULL;
-        }
-        for (counter = 0; counter < attempts; counter++)
-        {
-            (void)check_attempt(past_attempts[counter], curr_word, true);
-        }
+        print_game_header(last_error_message, attempts, curr_word, past_attempts);
+        last_error_message = NULL;
 
         // Get user input
         (void)printf("Enter your current attempt: ");
@@ -246,6 +336,15 @@ play_one_round(
             last_error_message = "Word length is incorrect.";
             continue;
         }
+        if (!is_dictionary_word(curr_attempt, dictionary))
+        {
+            last_error_message = "Word is not a dictionary word.";
+            continue;
+        }
+
+        // Save the attempt as a past attempt
+        (void)strncpy(past_attempts[attempts], curr_attempt, sizeof(curr_attempt));
+        attempts++;
 
         // Check the attempt
         if (check_attempt(curr_attempt, curr_word, false))
@@ -253,13 +352,10 @@ play_one_round(
             won = true;
             break;
         }
-
-        // Save the attempt as a past attempt
-        (void)strncpy(past_attempts[attempts], curr_attempt, sizeof(curr_attempt));
-        attempts++;
     }
 
     // Print solution
+    print_game_header(last_error_message, attempts, curr_word, past_attempts);
     if (won)
     {
         printf("\nGreat job on guessing the word %s%s%s!\n", GREEN, curr_word, RESET_COLOR);
