@@ -202,6 +202,10 @@ play_one_round(
             write_error("Failed reading user input.");
             goto cleanup;
         }
+        if (('\n' == curr_attempt[0]) || ('\r' == curr_attempt[0]))
+        {
+            continue;
+        }
         
         // Validate input
         curr_attempt[WORD_LENGTH] = '\0';
@@ -225,7 +229,7 @@ play_one_round(
     }
     else
     {
-        printf("\nYou failed guessing the word %s%s%s.\n", GREEN, curr_word, RESET_COLOR);
+        printf("\nYou failed guessing the word %s%s%s.\n", RED, curr_word, RESET_COLOR);
     }
 
     // Success
