@@ -17,7 +17,7 @@
 *  Purpose:    Defines the word length.                                 *
 *                                                                       *
 *************************************************************************/
-#define WORD_LENGTH (6)
+#define WORD_LENGTH (5)
 
 /************************************************************************
 *                                                                       *
@@ -41,7 +41,15 @@
 *  Purpose:    Defines the number of attempts per round.                *
 *                                                                       *
 *************************************************************************/
-#define ATTEMPTS_NUM (5)
+#define ATTEMPTS_NUM (6)
+
+/************************************************************************
+*                                                                       *
+*  Constant:   RED                                                      *
+*  Purpose:    Defines the color red.                                   *
+*                                                                       *
+*************************************************************************/
+#define RED ("\x1b[31m\x1b[1m")
 
 /************************************************************************
 *                                                                       *
@@ -100,18 +108,20 @@ print_logo(void)
 
 /************************************************************************
 *                                                                       *
-*  Function:   print_attempt                                            *
-*  Purpose:    Prints an attempt.                                       *
+*  Function:   check_attempt                                            *
+*  Purpose:    Checks an attempt and optionally prints it.              *
 *  Parameters: - attempt - the attempt, assumed to be a valid word.     *
 *              - word - the correct word, assumed to be a valid word.   *
+*              - print - whether to print or not.                       *
 *  Returns:    True if the word and the attempt match, false otherwise. *
 *                                                                       *
 *************************************************************************/
 static
 bool
-print_attempt(
+check_attempt(
     char* attempt,
-    char* word
+    char* word,
+    bool print
 )
 {
     char* colors[WORD_LENGTH] = { NULL };
@@ -147,11 +157,14 @@ print_attempt(
     }
 
     // Print the result
-    for (counter = 0; counter < WORD_LENGTH; counter++)
+    if (print)
     {
-        printf("%s%c%s", colors[counter] != NULL ? colors[counter] : "", toupper(attempt[counter]), RESET_COLOR);
+        for (counter = 0; counter < WORD_LENGTH; counter++)
+        {
+            printf("%s%c%s", colors[counter] != NULL ? colors[counter] : "", toupper(attempt[counter]), RESET_COLOR);
+        }
+        printf("\n");
     }
-    printf("\n");
 
     // Indicate success
     return WORD_LENGTH == hits;
@@ -180,6 +193,8 @@ play_one_round(
     unsigned long attempts = 0;
     unsigned long counter = 0;
     bool won = false;
+    char* last_error_message = NULL;
+    char* newline = NULL;
     
     // Choose a new word randomly
     (void)strncpy(curr_word, dictionary + ((rand() % num_words) * WORD_LENGTH), sizeof(curr_word) - 1);
@@ -189,9 +204,14 @@ play_one_round(
     {
         // Print game so far
         print_logo();
+        if (NULL != last_error_message)
+        {
+            (void)printf("%sERROR: %s%s\n\n", RED, RESET_COLOR, last_error_message);
+            last_error_message = NULL;
+        }
         for (counter = 0; counter < attempts; counter++)
         {
-            (void)print_attempt(past_attempts[counter], curr_word);
+            (void)check_attempt(past_attempts[counter], curr_word, true);
         }
 
         // Get user input
@@ -201,17 +221,34 @@ play_one_round(
         {
             write_error("Failed reading user input.");
             goto cleanup;
+        }        
+       
+        // Get rid of newline leftovers by fgets
+        curr_attempt[WORD_LENGTH] = '\0';
+        newline = strchr(curr_attempt, '\n');
+        if (NULL != newline)
+        {
+            *newline = '\0';
         }
-        if (('\n' == curr_attempt[0]) || ('\r' == curr_attempt[0]))
+        newline = strchr(curr_attempt, '\r');
+        if (NULL != newline)
+        {
+            *newline = '\0';
+        }
+        if ('\0' == curr_attempt[0])
         {
             continue;
         }
         
         // Validate input
-        curr_attempt[WORD_LENGTH] = '\0';
+        if (WORD_LENGTH != strlen(curr_attempt))
+        {
+            last_error_message = "Word length is incorrect.";
+            continue;
+        }
 
         // Check the attempt
-        if (print_attempt(curr_attempt, curr_word))
+        if (check_attempt(curr_attempt, curr_word, false))
         {
             won = true;
             break;
@@ -273,10 +310,13 @@ play(
         // Optionally play again
         do
         {
+            // Get rid of newline leftovers by getchar
             if (('\n' != choice) && ('\r' != choice))
             {
                 printf("Play again [Y/N]: ");
             }
+
+            // Get the choice
             choice = getchar();
             if (('N' == choice) || ('n' == choice))
             {
