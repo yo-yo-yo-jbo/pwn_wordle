@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <ctype.h>
 
 /************************************************************************
 *                                                                       *
@@ -121,16 +122,16 @@ print_attempt(
     // Get letter frequencies
     for (counter = 0; counter < WORD_LENGTH; counter++)
     {
-        frequencies[word[counter]]++;
+        frequencies[toupper(word[counter])]++;
     }
 
     // Finds the correct letters and assigns green to them
     for (counter = 0; counter < WORD_LENGTH; counter++)
     {
-        if (word[counter] == attempt[counter])
+        if (toupper(word[counter]) == toupper(attempt[counter]))
         {
             colors[counter] = GREEN;
-            frequencies[word[counter]]--;
+            frequencies[toupper(word[counter])]--;
             hits++;
         }
     }
@@ -138,18 +139,19 @@ print_attempt(
     // Finds misplaced letters
     for (counter = 0; counter < WORD_LENGTH; counter++)
     {
-        if ((NULL == colors[counter]) && (0 < frequencies[attempt[counter]]))
+        if ((NULL == colors[counter]) && (0 < frequencies[toupper(attempt[counter])]))
         {
             colors[counter] = YELLOW;
-            frequencies[attempt[counter]]--;
+            frequencies[toupper(attempt[counter])]--;
         }
     }
 
     // Print the result
     for (counter = 0; counter < WORD_LENGTH; counter++)
     {
-        printf("%s%c%s", colors[counter] != NULL ? colors[counter] : "", attempt[counter], RESET_COLOR);
+        printf("%s%c%s", colors[counter] != NULL ? colors[counter] : "", toupper(attempt[counter]), RESET_COLOR);
     }
+    printf("\n");
 
     // Indicate success
     return WORD_LENGTH == hits;
@@ -173,14 +175,14 @@ play_one_round(
 {
     bool result = false;
     char curr_word[WORD_LENGTH + 1] = { 0 };
-    char curr_attempt[WORD_LENGTH + 1] = { 0 };
+    char curr_attempt[WORD_LENGTH + 2] = { 0 };
     char past_attempts[ATTEMPTS_NUM][WORD_LENGTH + 1] = { 0 };
     unsigned long attempts = 0;
     unsigned long counter = 0;
     bool won = false;
     
     // Choose a new word randomly
-    (void)strncpy(curr_word, dictionary + ((rand() % num_words) * WORD_LENGTH), sizeof(curr_word));
+    (void)strncpy(curr_word, dictionary + ((rand() % num_words) * WORD_LENGTH), sizeof(curr_word) - 1);
 
     // Play all rounds
     while (ATTEMPTS_NUM > attempts)
@@ -195,11 +197,14 @@ play_one_round(
         // Get user input
         (void)printf("Enter your current attempt: ");
         (void)memset(curr_attempt, '\0', sizeof(curr_attempt));
-        if (NULL == fgets(curr_attempt, sizeof(curr_attempt), stdin))
+        if (NULL == fgets(curr_attempt, sizeof(curr_attempt) - 1, stdin))
         {
             write_error("Failed reading user input.");
             goto cleanup;
         }
+        
+        // Validate input
+        curr_attempt[WORD_LENGTH] = '\0';
 
         // Check the attempt
         if (print_attempt(curr_attempt, curr_word))
@@ -262,9 +267,12 @@ play(
         }
 
         // Optionally play again
-        printf("Play again [Y/N]: ");
         do
         {
+            if (('\n' != choice) && ('\r' != choice))
+            {
+                printf("Play again [Y/N]: ");
+            }
             choice = getchar();
             if (('N' == choice) || ('n' == choice))
             {
@@ -397,6 +405,10 @@ int
 main()
 {
     char* dictionary = NULL;
+
+    // No buffering
+    setvbuf(stdin, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
 
     // Print the logo
     print_logo();
