@@ -158,11 +158,16 @@ def solve():
                     log.info(f'Got new chunk: "{word}"')
                     pbar.status(len(gathered_words))
 
-                # Continue playing
-                p.sendline(b'Y')
+                # Continue playing unless finished
+                if len(gathered_words) < flag_words:
+                    p.sendline(b'Y')
 
-            # Success status
+            # Success status and finish process gracefully
             pbar.success(f'Got {flag_words} chunks.')
+            p.sendline(b'N')
+
+        # Present all chunks
+        log.success('Got all chunks - a meaningful permutation of them is the flag')
 
     # Log exceptions and quit
     except IOError as ex:
