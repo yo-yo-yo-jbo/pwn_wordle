@@ -16,17 +16,25 @@ def find_dictionary_word(p, dictionary_words):
         Finds a dictionary word.
     """
     
+    # Receive until we wait for input
+    p.recvuntil(b'Enter your current attempt: ')
+    
     # Iterate all options
     attempt_num = 0
     with log.progress('Attempting to get one dictionary word') as pbar:
         for candidate in dictionary_words:
+
+            # Send candidate and receive output
             attempt_num += 1
-            pbar.status(f'{candidate} ({attempt_num} / {len(dictionary_words)})')
+            pbar.status(f'({attempt_num} / {len(dictionary_words)})')
             p.sendline(candidate.encode())
+            p.recvuntil(b'Enter your current attempt: ')
             output = p.recvuntil(b'Enter your current attempt: ')
-            if b'Word is not a dictionary word.' not in output:
-                log.info(f'Found dictionary word "{candidate}"')
-                return candidate
+            
+            # Check if output has meaningful data
+            if b'ERROR' not in output:
+                pbar.success(f'"{candidate}"')
+                return candidate 
 
     # Should never happen
     raise Exception('Was not able to find any dictionary words')
@@ -104,30 +112,36 @@ def solve():
         dictionary_word = find_dictionary_word(p, dictionary_words) 
 
         # Continue until we get enough words
-        gathered_words = set()
-        while len(gathered_words) < flag_words:
+        with log.progress('Playing until we get enough chunks') as pbar:
+            gathered_words = set()
+            while len(gathered_words) < flag_words:
 
-            # Exhaust all attempts with dictionary word
-            while True:
-                
-                # Wait until we program asks for input
-                output = p.recvuntil(b': ')
-            
-                # Handle all attempts
-                if output.endswith(b'Enter your current attempt: '):
-                    p.sendline(dictionary_word)
-                    continue
+                # Set initial output
+                output = b''
+
+                # Exhaust all attempts with dictionary word
+                while b'You failed guessing' not in output:
+
+                    # Send next dictionary word
+                    p.sendline(dictionary_word.encode())
+                    output = p.recvuntil(b': ')
+                    if b'You failed guessing' in output:
+                        break
+                    output = p.recvuntil(b': ')
 
                 # Extract word
-                assert b'You failed guessing the word ' in output, Exception(f'Unexpected output from program {output}')
                 word = ''.join([ c for c in output.split(b'You failed guessing the word ')[1].split(b'\n')[0].decode() if c in ALPHABET ])
                 assert len(word) == WORD_SIZE, Exception(f'Got an unexpected word "{word}"')
                 if word not in gathered_words:
-                    gathered_words.append(word)
+                    gathered_words.add(word)
                     log.info(f'Got new chunk: "{word}"')
+                    pbar.status(len(gathered_words))
+
+                # Continue playing
+                p.sendline(b'Y')
 
     # Log exceptions and quit
-    except Exception as ex:
+    except IOError as ex:
         log.error(f'{ex}')
 
 if __name__ == '__main__':
