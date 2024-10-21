@@ -324,7 +324,7 @@ play_one_round(
         print_game_header(last_error_message, attempts, curr_word, past_attempts, number_of_dict_words);
 
         // Get user input
-        (void)printf("Enter your current attempt: ");
+        (void)printf("\nEnter your current attempt: ");
         (void)memset(curr_attempt, '\0', sizeof(curr_attempt));
         if (NULL == fgets(curr_attempt, sizeof(curr_attempt) - 1, stdin))
         {
