@@ -163,7 +163,7 @@ def solve():
                     p.sendline(b'Y')
 
             # Success status and finish process gracefully
-            pbar.success(f'Got {flag_words} chunks.')
+            pbar.success(f'got {flag_words} chunks')
             p.sendline(b'N')
 
         # Present all chunks
