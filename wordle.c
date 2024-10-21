@@ -440,6 +440,9 @@ play(
         while (('Y' != choice) && ('y' != choice));
     }
 
+    // Print goodbye message
+    (void)printf("%sTHANKS FOR PLAYING!%s\n", RED, RESET_COLOR);
+
 cleanup:
 
     // Return

