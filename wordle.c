@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <ctype.h>
+#include <time.h>
 
 /************************************************************************
 *                                                                       *
@@ -569,6 +570,9 @@ main()
     // Set buffering
     setvbuf(stdin, NULL, _IOFBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
+
+    // Randomize
+    srand(time(NULL));
 
     // Print the logo
     print_logo();
