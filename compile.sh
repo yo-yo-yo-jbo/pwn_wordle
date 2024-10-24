@@ -8,7 +8,7 @@ strip ./wordle
 checksec ./wordle
 chown root:root ./wordle
 chmod 4755 ./wordle
-printf NEVER_TELL_THE_TRUTH_TO_PEOPLE_WHO_ARE_NOT_WORTHY_OF_IT > ./flag.txt
+printf INTENT{WORDS_CAN_CARRY_ANY_BURDEN_WE_WISH_ALL_THATS_REQUIRED_IS_AGREEMENT_AND_A_TRADITION_UPON_WHICH_TO_BUILD} > ./flag.txt
 chmod 600 ./flag.txt
 chown root:root ./dictionary.txt
 
