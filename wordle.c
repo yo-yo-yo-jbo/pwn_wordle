@@ -452,7 +452,7 @@ cleanup:
 
 /************************************************************************
 *                                                                       *
-*  Function:   read_entire_dictionary                                   *
+*  Function:   read_dictionary                                          *
 *  Purpose:    Reads the entire dictionary file and returns it.         *
 *  Returns:    The dictionary as a string upon success, NULL otherwise. *
 *  Remarks:    Free the returned dictionary string upon success.        *
