@@ -141,8 +141,6 @@ def solve():
                     # Send next dictionary word
                     p.sendline(dictionary_word.encode())
                     output = recv_until_next_input(p)
-                    if b'Great job' in output:
-                        import pdb; pdb.set_trace
 
                 # Extract word
                 if HIT_MARKER in output:
