@@ -63,8 +63,8 @@ def run_symlink_attack(target_dir):
     """
 
     # Conclude paths
-    exe_target_file = os.path.join(target_dir, 'wordle')
-    flag_target_file = os.path.join(target_dir, 'flag.txt')
+    exe_target_file = os.path.join(target_dir, 'wordle.elf')
+    flag_target_file = os.path.join(target_dir, 'flag')
     assert os.path.isfile(exe_target_file), Exception(f'Could not find target executable file under directory "{target_dir}"')
     assert os.path.isfile(flag_target_file), Exception(f'Could not find target flag file under directory "{target_dir}"')
 
