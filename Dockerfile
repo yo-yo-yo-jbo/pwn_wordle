@@ -9,7 +9,7 @@ RUN set -eux; \
     ./compile.sh
 
 
-FROM debian:bookworm-slim as core
+FROM python:3.12-slim-bookworm as core
 
 ARG USERNAME=app
 ARG PASSWORD=app
@@ -17,7 +17,7 @@ ARG GOTTY_VERSION=1.0.1
 
 COPY generate.sh /generate.sh
 COPY dictionary.txt wordle flag /opt/wordle/
-COPY --from=build /usr/src/app/wordle.so /opt/wordle/
+COPY --from=build /usr/src/app/wordle.elf /opt/wordle/
 
 RUN set -eux; \
     apt-get update; \
@@ -37,6 +37,10 @@ RUN set -eux; \
     chmod +x /usr/local/bin/gotty
 
 RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends vim nano; \
+    \
+    pip install --no-cache-dir --upgrade pwntools ipython; \
     \
     chmod 600 /opt/wordle/flag; \
     chmod +x /opt/wordle/wordle*
