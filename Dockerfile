@@ -45,6 +45,7 @@ RUN set -eux; \
     adduser --disabled-password --no-create-home --shell /sbin/nologin --gecos flag flag; \
     \
     chmod 400 /opt/wordle/flag; \
+    chmod 4555 /opt/wordle; \
     chown flag:root /opt/wordle/flag; \
     chmod +x /opt/wordle/wordle*
 
