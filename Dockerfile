@@ -42,7 +42,10 @@ RUN set -eux; \
     \
     pip install --no-cache-dir --upgrade pwntools ipython; \
     \
-    chmod 600 /opt/wordle/flag; \
+    adduser --disabled-password --no-create-home --shell /sbin/nologin --gecos flag flag; \
+    \
+    chmod 400 /opt/wordle/flag; \
+    chown flag:root /opt/wordle/flag; \
     chmod +x /opt/wordle/wordle*
 
 EXPOSE 3000
