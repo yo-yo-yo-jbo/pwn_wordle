@@ -40,7 +40,7 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends vim nano; \
     \
-    pip install --no-cache-dir --upgrade pwntools ipython; \
+    pip install --no-cache-dir --upgrade pwntools ipython cron-descriptor; \
     \
     adduser --disabled-password --no-create-home --shell /sbin/nologin --gecos flag flag; \
     \

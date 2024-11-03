@@ -8,7 +8,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DELETE_CRON: "*/2 * * * *"
+      DELETE_CRON: "*/15 * * * *"
     labels:
       kompose.image-pull-policy: Always
       kompose.service.expose: name.challenge.ctf.today
