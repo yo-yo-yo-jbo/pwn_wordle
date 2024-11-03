@@ -15,7 +15,8 @@ ARG USERNAME=app
 ARG PASSWORD=app
 ARG GOTTY_VERSION=1.0.1
 
-COPY generate.sh /generate.sh
+COPY generate.sh entrypoint.sh /
+
 COPY dictionary.txt wordle flag /opt/wordle/
 COPY --from=build /usr/src/app/wordle.elf /opt/wordle/
 
@@ -24,7 +25,7 @@ RUN set -eux; \
     apt-get install -y sudo xxd cron curl; \
     \
     chmod -r /home; \
-    chmod +x /generate.sh; \
+    chmod +x /generate.sh /entrypoint.sh; \
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudo; \
     adduser --disabled-password --no-create-home --ingroup sudo --shell /generate.sh --gecos ${USERNAME} ${USERNAME}; \
     echo "${USERNAME}:${PASSWORD}" | chpasswd; \
@@ -38,7 +39,7 @@ RUN set -eux; \
 
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends vim nano; \
+    apt-get install -y --no-install-recommends vim nano procps; \
     \
     pip install --no-cache-dir --upgrade pwntools ipython cron-descriptor; \
     \
@@ -52,4 +53,4 @@ RUN set -eux; \
 EXPOSE 3000
 USER $USERNAME
 ENV TERM=xterm-256color
-CMD [ "gotty", "--address", "0.0.0.0", "--port", "3000", "--permit-write", "--reconnect", "/generate.sh" ]
+CMD [ "/entrypoint.sh" ]

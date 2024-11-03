@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 USERNAME="user-$(head -c8 /dev/urandom | xxd -p | tr -d $'\n')"
 DELETE_CRON="${DELETE_CRON:-*/30 * * * *}"
 
