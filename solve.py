@@ -76,6 +76,7 @@ def run_symlink_attack(target_dir):
 
     # Create a symlink for executable
     temp_dir = tempfile.mkdtemp()
+    os.chmod(temp_dir, 0o777)
     exe_symlink_path = os.path.join(temp_dir, 'sym')
     os.symlink(exe_target_file, exe_symlink_path)
     log.info(f'Created symlink for executable at "{exe_symlink_path}"')
