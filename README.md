@@ -98,4 +98,12 @@ I coded one solution under the `solve.py` file - it gets the directory of `wordl
 
 In a real CTF where people might be short on time, I expect step #3 to be done seperately.
 
+An alternative to symlink creation in #1 is using the `exec` command which can freely manipulate the commandline.  
+However, a symlink in #2 is still necessary.
 
+## Summary
+Although this exercise is easy, there are similar real world issues like that, involving symlink aatacks as well as partial reads of valuable data.
+
+I hope you find this challenge and explanation useful!
+
+Jonathan Bar Or
