@@ -1,5 +1,6 @@
 # Terminal Wordle challenge
-An interesting Linux challenge exploiting a [Wordle](https://en.wikipedia.org/wiki/Wordle) terminal implementation running as a SUID binary.
+I was asked to write a challenge for the 2024 [Intent Summit](https://intentsummit.org) CTF.  
+I ended up coding an interesting Linux challenge exploiting a [Wordle](https://en.wikipedia.org/wiki/Wordle) terminal implementation running as a SUID binary.
 ![Screenshot](screenshot.png)
 
 ## Running
